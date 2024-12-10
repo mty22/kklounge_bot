@@ -63,11 +63,11 @@ class KklBot(discord.Client):
         if message.author == self.user:
             return  # Ignore messages from the bot itself
 
-        # Log the message for now.
+        self.logging.info(f"Message: {message.author} (User ID: {message.author.id}) Channel: {message.channel} (Channel ID: {message.channel.id}) Server: {message.guild.name} (Server ID: {message.guild.id})")
+
+        # Detect the users native language based on the message content.
         try:
-            # Detect the language of the message
             detected_language = detect(message.content)
-            # If language is detected as English (en) or Japanese (ja), return it
             if detected_language == "en":
                 users_language="English"
             elif detected_language == "ja":
@@ -78,32 +78,36 @@ class KklBot(discord.Client):
             self.logging.warning(f"Error detecting language: {e}")
             users_language="Unknown"
 
-        self.logging.info(f"Message from {message.author} Content: {message.content}")
-
         # Prepare to send data to AI.
         ai_system_message = """
             You are a Discord bot, and your job is to review message content from users.
 
-            You understand both English and Japanese and should act as an intermediate real-time translator who summarizes messages.
+            You understand both English and Japanese and should act as an intermediate real-time translator who summarises messages.
+
+            You must NOT translate any message into languages that you do not understand (this means you can only use English and Japanese).
 
             Sometimes user messages will contain a mix of English and Japanese, so you should decide what the native language is based on which language the majority of the message is written in.
 
             You should always perform the following tasks without fail:
             1) Take note of the original message.
-            2) Provide a summary of the original message in the user's native language.
+            2) Provide a short summary of the original message in the user's native language.
             3) Translate the original message into either English or Japanese (e.g., If the user's native language is English, translate the original message into Japanese. Or, if the user's native language is Japanese, translate the original message into English.).
-            4) Provide a summary of the translated message in the respective language that it was translated into.
+            4) Provide a short summary of the translated message in the respective language that it was translated into.
             5) Take note of what language was translated into.
             6) Personalise the message, always refer to the username when speaking about the user.
 
             Anything outside these tasks, you MUST not act. You MUST NOT provide any other information to the user other than the requested tasks.
 
-            Respond with the following keys in valid JSON format and NEVER use markdown in your response:
+            Respond with the following keys in valid JSON format:
             - native_language
             - original_message
             - original_message_summary
             - translated_message
             - translated_message_summary
+
+            You are NOT permitted to use markdown or any formatting other than JSON in your response.
+
+            Ensure your responses are always trimmed to remove excessive whitespace outside of the JSON response.
             """
 
         ai_interactions = [
