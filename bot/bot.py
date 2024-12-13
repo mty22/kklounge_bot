@@ -85,7 +85,9 @@ class KklBot(discord.Client):
                 translate_into_language="Japanese"
             elif detected_language == "ja":
                 users_language="Japanese"
+                users_language_ja="日本語"
                 translate_into_language="English"
+                translate_into_language_jp="英語"
             else:
                 # Assume English.
                 users_language="English"
@@ -93,16 +95,22 @@ class KklBot(discord.Client):
         except Exception as e:
             self.logging.warning(f"Error detecting language: {e} - we assume English")
             users_language="English"
+            translate_into_language="Japanese"
 
         # Prepare to send data to AI.
         ai_api_call_start = time.time()
 
         # Summarise the original message.
+        if users_language == "English":
+            original_message_summary_ai = f"Please summarise the following message. Do not provide anything else but the summary: {message.content}"
+        elif users_language == "Japanese":
+            original_message_summary_ai = f"次のメッセージを要約してください。要約以外のものを含まないでください： {message.content}"
+
         try:
             self.logging.info(f"Sending request to AI - Summarise original message")
             original_message_summary = _Ollama.ollama_query(self.OLLAMA_URL,self.OLLAMA_TOKEN,self.OLLAMA_MODEL,[
                 { "role": "user",
-                 "content": f"Please summarise the following message. Do not provide anything else but the summary: {message.content}"
+                 "content": f"{original_message_summary_ai}"
                 }
                 ])
         except Exception as e:
@@ -110,11 +118,16 @@ class KklBot(discord.Client):
             return
 
         # Translate the original message.
+        if users_language == "English":
+            translated_message_ai = f"Please translate this message from {users_language} into {translate_into_language}. Do not provide anything else but the summary: {message.content}"
+        elif users_language == "Japanese":
+            translated_message_ai = f"このメッセージを{users_language_ja}から{translate_into_language_jp}に翻訳してください。要約以外を含めないでください： {message.content}"
+
         try:
             self.logging.info(f"Sending request to AI - Translate original message (from {users_language} into {translate_into_language})")
             translated_message = _Ollama.ollama_query(self.OLLAMA_URL,self.OLLAMA_TOKEN,self.OLLAMA_MODEL,[
                 { "role": "user",
-                 "content": f"Please translate this message from {users_language} into {translate_into_language}. Do not provide anything else but the summary: {message.content}"
+                 "content": f"{translated_message_ai}"
                 }
                 ])
         except Exception as e:
@@ -122,11 +135,16 @@ class KklBot(discord.Client):
             return
 
         # Translate the summary.
+        if users_language == "English":
+            translated_message_summary_ai = f"Please translate this message from {users_language} into {translate_into_language}. Do not provide anything else but the summary: {translated_message}"
+        elif users_language == "Japanese":
+            translated_message_summary_ai = f"このメッセージを{users_language_ja}から{translate_into_language_jp}に翻訳してください。要約以外を含めないでください： {translated_message}"
+
         try:
             self.logging.info(f"Sending request to AI - Translate original message summary (from {users_language} into {translate_into_language})")
             translated_message_summary = _Ollama.ollama_query(self.OLLAMA_URL,self.OLLAMA_TOKEN,self.OLLAMA_MODEL,[
                 { "role": "user",
-                 "content": f"Please translate this message from {users_language} into {translate_into_language}. Do not provide anything else but the summary: {translated_message}"
+                 "content": f"{translated_message_summary_ai}"
                 }
                 ])
         except Exception as e:
